@@ -1,0 +1,346 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>Gra Snake</title>
+        <link rel="preconnect" href="https://fonts.googleapis.com">
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link href="https://fonts.googleapis.com/css2?family=Climate+Crisis&display=swap" rel="stylesheet">
+        <style>
+            body
+            {
+                margin:0;
+                background-image:radial-gradient(circle, rgba(0,0,0,1) 16%, rgba(0,0,0,0.4414098403033089) 76%),url("cegla.png");
+                background-repeat:repeat;
+            }
+            #gra
+            {
+                display:flex;
+                justify-content: center;
+                align-items: center;
+            }
+        </style>
+        <script>
+            var get = new Audio('bell.mp3');
+            var die = new Audio('bonk.mp3');
+            const NUM_OF_TILES = 21;
+            let WINDOW_SIZE = {width:0, height:0, tileSize:32};
+            WINDOW_SIZE.width = NUM_OF_TILES*WINDOW_SIZE.tileSize;
+            WINDOW_SIZE.height = NUM_OF_TILES*WINDOW_SIZE.tileSize;
+            class SnakeSeg
+            {
+                constructor(_x,_y)
+                {
+                    this.position = {x:_x,y:_y};
+                    this.direction = 'D';
+                    this.turn = 0;
+                }
+            }
+            class Snake
+            {
+                constructor(_x,_y)
+                {
+                    this.score = 0;
+                    this.start = false;
+                    this.dead = false;
+                    this.speed = WINDOW_SIZE.tileSize;
+                    this.segments = [new SnakeSeg(_x, _y), new SnakeSeg(_x, _y-WINDOW_SIZE.tileSize),new SnakeSeg(_x, _y-2*WINDOW_SIZE.tileSize)];
+                    this.head = this.segments[0];
+                    let check1 = false;
+                    while (!check1) {
+                        let x = Math.floor(Math.random() * WINDOW_SIZE.width / WINDOW_SIZE.tileSize) * WINDOW_SIZE.tileSize - WINDOW_SIZE.tileSize / 2;
+                        let y = Math.floor(Math.random() * WINDOW_SIZE.width / WINDOW_SIZE.tileSize) * WINDOW_SIZE.tileSize - WINDOW_SIZE.tileSize / 2;
+                        if (x > WINDOW_SIZE.tileSize && y > WINDOW_SIZE.tileSize && x < WINDOW_SIZE.width - WINDOW_SIZE.tileSize && y < WINDOW_SIZE.height - WINDOW_SIZE.tileSize)
+                            for (let i = 0; i < this.segments.length; i++)
+                                if (x != this.segments[i].position.x || y != this.segments[i].position.y)
+                                    check1 = true;
+                                else
+                                {
+                                    check1=false;
+                                    break;
+                                }
+                        if (check1)
+                            this.pointPos = { x: x, y: y };
+                    }
+                }
+                turn(direction)
+                {
+                    if (direction!="restart")
+                    {
+                        if (!this.dead&&this.head.turn == 0 && ((this.head.direction=='U'||this.head.direction=='D')&&(direction=='R'||direction=='L')||(this.head.direction=='R'||this.head.direction=='L')&&(direction=='D'||direction=='U')))
+                        {
+                            this.head.turn = this.head.direction;
+                            this.head.direction = direction;
+                        }
+                        if (!this.start && direction!='U')
+                                this.start = true;
+                    }
+                    else
+                    {
+                        if (this.dead)
+                        {
+                            let _x = WINDOW_SIZE.width/2;
+                            let _y = WINDOW_SIZE.width/2 + WINDOW_SIZE.tileSize;
+                            this.score = 0;
+                            this.start = false;
+                            this.dead = false;
+                            this.speed = WINDOW_SIZE.tileSize;
+                            this.segments = [new SnakeSeg(_x, _y), new SnakeSeg(_x, _y-WINDOW_SIZE.tileSize),new SnakeSeg(_x, _y-2*WINDOW_SIZE.tileSize)];
+                            this.head = this.segments[0];
+                            let check1 = false;
+                            while (!check1) {
+                                let x = Math.floor(Math.random() * WINDOW_SIZE.width / WINDOW_SIZE.tileSize) * WINDOW_SIZE.tileSize - WINDOW_SIZE.tileSize / 2;
+                                let y = Math.floor(Math.random() * WINDOW_SIZE.width / WINDOW_SIZE.tileSize) * WINDOW_SIZE.tileSize - WINDOW_SIZE.tileSize / 2;
+                                if (x > WINDOW_SIZE.tileSize && y > WINDOW_SIZE.tileSize && x < WINDOW_SIZE.width - WINDOW_SIZE.tileSize && y < WINDOW_SIZE.height - WINDOW_SIZE.tileSize)
+                                    for (let i = 0; i < this.segments.length; i++)
+                                        if (x != this.segments[i].position.x || y != this.segments[i].position.y)
+                                            check1 = true;
+                                        else
+                                        {
+                                            check1=false;
+                                            break;
+                                        }
+                                if (check1)
+                                    this.pointPos = { x: x, y: y };
+                            }
+                        }
+                    }
+                }
+                addNewSegment()
+                {
+                    let check1;
+                    let last = this.segments[this.segments.length - 1];
+                    if (last.turn==0)
+                        check1 = last.direction;
+                    else
+                        check1 = last.turn;
+                    if (check1 == 'U')
+                        this.segments.push(new SnakeSeg(last.position.x, last.position.y + this.speed));
+                    else if (check1 == 'D')
+                        this.segments.push(new SnakeSeg(last.position.x, last.position.y - this.speed));
+                    else if (check1 == 'L')
+                        this.segments.push(new SnakeSeg(last.position.x + this.speed, last.position.y));
+                    else if (check1 == 'R')
+                        this.segments.push(new SnakeSeg(last.position.x - this.speed, last.position.y));
+                }
+                checkCollision()
+                {
+                    let check = false;
+                    if (this.head.position.x<=WINDOW_SIZE.tileSize || this.head.position.x>=WINDOW_SIZE.width-WINDOW_SIZE.tileSize || this.head.position.y<=WINDOW_SIZE.tileSize || this.head.position.y>=WINDOW_SIZE.height-WINDOW_SIZE.tileSize)
+                        check=true;
+                    if (!check)
+                        for (let i=1;i<this.segments.length;i++)
+                            if (this.head.position.x == this.segments[i].position.x && this.head.position.y == this.segments[i].position.y)
+                                check = true;
+                    if (check&& !this.dead)
+                    {
+                        this.dead = true;
+                        die.play();
+                    }
+                    if (!check && this.head.position.x==this.pointPos.x && this.head.position.y==this.pointPos.y)
+                    {
+                        get.play();
+                        this.score++;
+                        this.addNewSegment();
+                        let check1 = false;
+                        while (!check1)
+                        {
+                            let x = Math.floor(Math.random()*WINDOW_SIZE.width/WINDOW_SIZE.tileSize)*WINDOW_SIZE.tileSize -WINDOW_SIZE.tileSize/2;
+                            let y = Math.floor(Math.random()*WINDOW_SIZE.width/WINDOW_SIZE.tileSize)*WINDOW_SIZE.tileSize -WINDOW_SIZE.tileSize/2;
+                            if (x>WINDOW_SIZE.tileSize&&y>WINDOW_SIZE.tileSize&&x<WINDOW_SIZE.width-WINDOW_SIZE.tileSize&&y<WINDOW_SIZE.height-WINDOW_SIZE.tileSize)
+                                for (let i=0;i<this.segments.length;i++)
+                                {
+                                    if (x!=this.segments[i].position.x || y!=this.segments[i].position.y)
+                                        check1 = true;
+                                    else
+                                    {
+                                        check1=false;
+                                        break;
+                                    }
+                                }
+                            if (check1)
+                                this.pointPos = {x:x,y:y};
+                        }
+                    }
+                }
+                chainMovement()
+                {
+                    this.checkCollision();
+                    if (this.start&& !this.dead)
+                    {
+                        let turns = [];
+                        for (let i = 1; i < this.segments.length; i++) {
+                            if (this.segments[i - 1].turn == 0 )
+                                this.segments[i].direction = this.segments[i - 1].direction;
+                            else
+                                this.segments[i].direction = this.segments[i - 1].turn;
+                            turns.push(this.segments[i - 1].turn)
+                        }
+                        this.head.turn = 0;
+                        for (let i = 0; i < this.segments.length; i++) {
+                            if (this.segments[i].direction == "U")
+                                this.segments[i].position.y -= this.speed;
+                            else if (this.segments[i].direction == "D")
+                                this.segments[i].position.y += this.speed;
+                            else if (this.segments[i].direction == "R")
+                                this.segments[i].position.x += this.speed;
+                            else if (this.segments[i].direction == "L")
+                                this.segments[i].position.x -= this.speed;
+                            if (i < this.segments.length - 1)
+                                this.segments[i + 1].turn = turns[i];
+                        }
+                    }
+                    if (this.dead&&this.head.turn!=0)
+                            this.head.direction = this.head.turn;
+                }
+            }
+            let snake = new Snake(WINDOW_SIZE.width/2, WINDOW_SIZE.width/2 + WINDOW_SIZE.tileSize);
+            function animate()
+            {
+                let c = document.getElementById("board");
+                let ctx = c.getContext("2d");
+                ctx.beginPath();
+                const img = new Image();
+                img.src = './bg.png';
+                img.onload = () => 
+                {          
+                    ctx.drawImage(img, (-1)^(50*Math.random()%2), (-1)^(50*Math.random()%2))
+                    ctx.beginPath();
+                    ctx.arc(snake.pointPos.x+(-1)^(50*Math.random()%2), snake.pointPos.y+(-1)^(50*Math.random()%2), WINDOW_SIZE.tileSize/2, 0, 2 * Math.PI);
+                    ctx.fillStyle = "#8a1919";
+                    ctx.fill();
+                    ctx.beginPath();
+                    ctx.arc((snake.pointPos.x+(-1)^(50*Math.random()%2))-Math.floor(WINDOW_SIZE.tileSize/10), (snake.pointPos.y+(-1)^(50*Math.random()%2))-Math.floor(WINDOW_SIZE.tileSize/10), Math.floor(WINDOW_SIZE.tileSize/2.5), 0, 2 * Math.PI);
+                    ctx.fillStyle = "#d82c2c";
+                    ctx.fill();
+                    ctx.beginPath();
+                    ctx.arc((snake.pointPos.x+(-1)^(50*Math.random()%2))-Math.floor(WINDOW_SIZE.tileSize/4), (snake.pointPos.y+(-1)^(50*Math.random()%2))-Math.floor(WINDOW_SIZE.tileSize/5), Math.floor(WINDOW_SIZE.tileSize/7), 0, 2 * Math.PI);
+                    ctx.fillStyle = "#f3bebe";
+                    ctx.fill();
+                    ctx.beginPath();
+                    ctx.strokeStyle = "#2d2011";
+                    ctx.lineWidth = WINDOW_SIZE.tileSize/16;
+                    ctx.moveTo((snake.pointPos.x+(-1)^(50*Math.random()%2))+2*Math.floor(WINDOW_SIZE.tileSize/16), (snake.pointPos.y+(-1)^(50*Math.random()%2))-Math.floor(WINDOW_SIZE.tileSize/2));
+                    ctx.lineTo((snake.pointPos.x+(-1)^(50*Math.random()%2))+Math.floor(WINDOW_SIZE.tileSize/16), (snake.pointPos.y+(-1)^(50*Math.random()%2))-Math.floor(WINDOW_SIZE.tileSize/2 - 2*WINDOW_SIZE.tileSize/16));
+                    ctx.lineWidth=3;
+                    ctx.stroke();
+                    for (let i=snake.segments.length-1;i>=0;i--)
+                    {
+                        let proc = 0;
+                        if (snake.segments.length<30)
+                            proc = 50 - i;
+                        else
+                            proc = Math.round(50 - i*(29/snake.segments.length));
+                        let width = 0;
+                        if (snake.segments.length<12)
+                            width = WINDOW_SIZE.tileSize/32*(16-i);
+                        else
+                            width = WINDOW_SIZE.tileSize/32*Math.round(16 - i*(12/snake.segments.length));
+                        ctx.fillStyle = "hsla(122, 56%, "+proc+"%, 1)";
+                        ctx.beginPath();
+                        ctx.arc(snake.segments[i].position.x, snake.segments[i].position.y, width, 0, 2 * Math.PI);
+                        ctx.fill();
+                        if (i==0)
+                        {
+                            ctx.fillStyle = "#000000";
+                            ctx.beginPath();
+                            let numX1 = 0;
+                            let numY1 = 0;
+                            let numX2 = 0;
+                            let numY2 = 0;
+                            if (snake.segments[i].direction=='D')
+                            {
+                                numX1 = -Math.floor(WINDOW_SIZE.tileSize/5);
+                                numX2 = Math.floor(WINDOW_SIZE.tileSize/5);
+                                numY1 = Math.floor(WINDOW_SIZE.tileSize/8);
+                                numY2 = Math.floor(WINDOW_SIZE.tileSize/8);
+                            }
+                            else if (snake.segments[i].direction=='U')
+                            {
+                                numX1 = -Math.floor(WINDOW_SIZE.tileSize/5);
+                                numX2 = Math.floor(WINDOW_SIZE.tileSize/5);
+                                numY1 = -Math.floor(WINDOW_SIZE.tileSize/8);
+                                numY2 = -Math.floor(WINDOW_SIZE.tileSize/8);
+                            }
+                            else if (snake.segments[i].direction=='L')
+                            {
+                                numX1 = -Math.floor(WINDOW_SIZE.tileSize/8);
+                                numX2 = -Math.floor(WINDOW_SIZE.tileSize/8);
+                                numY1 = -Math.floor(WINDOW_SIZE.tileSize/5);
+                                numY2 = Math.floor(WINDOW_SIZE.tileSize/5);
+                            }
+                            else if (snake.segments[i].direction=='R')
+                            {
+                                numX1 = Math.floor(WINDOW_SIZE.tileSize/8);
+                                numX2 = Math.floor(WINDOW_SIZE.tileSize/8);
+                                numY1 = -Math.floor(WINDOW_SIZE.tileSize/5);
+                                numY2 = Math.floor(WINDOW_SIZE.tileSize/5);
+                            }
+                            ctx.arc(snake.segments[i].position.x+numX1+(-1)^(50*Math.random()%2), snake.segments[i].position.y+numY1+(-1)^(50*Math.random()%2), Math.round(WINDOW_SIZE.tileSize/8), 0, 2 * Math.PI);
+                            ctx.arc(snake.segments[i].position.x+numX2+(-1)^(50*Math.random()%2), snake.segments[i].position.y+numY2+(-1)^(50*Math.random()%2), Math.round(WINDOW_SIZE.tileSize/8), 0, 2 * Math.PI);
+                            ctx.fill();
+                        }
+                        else
+                        {
+                            ctx.strokeStyle = "hsla(122, 56%, "+proc+"%, 1)";
+                            ctx.lineWidth = width*2;
+                            ctx.beginPath()
+                            ctx.moveTo(snake.segments[i].position.x, snake.segments[i].position.y);
+                            ctx.lineTo(snake.segments[i-1].position.x, snake.segments[i-1].position.y);
+                            ctx.stroke();
+                        }
+                    }
+                    snake.chainMovement();
+                    ctx.beginPath();
+                    ctx.font = '26px Climate Crisis';
+                    ctx.fillStyle = "White";
+                    ctx.fillText(snake.score, 32, 26); 
+                    if (!snake.start)
+                    {
+                        ctx.rect(0,0,WINDOW_SIZE.width,WINDOW_SIZE.height)
+                        ctx.fillStyle = "RGBA(0,0,0,0.25)";
+                        ctx.fill();
+                        ctx.font = '42px Climate Crisis';
+                        ctx.fillStyle = "Black";
+                        ctx.fillText("Wciśnij dowolny", 100, 100);
+                        ctx.fillText("klawisz aby", 170, 150);
+                        ctx.fillText("rozpoczac gre", 120, 200);
+                        ctx.fillText("(WASD/strzalki)", 100, 250);
+                    }
+                    if (snake.dead)
+                    {
+                        ctx.rect(0,0,WINDOW_SIZE.width,WINDOW_SIZE.height)
+                        ctx.fillStyle = "RGBA(0,0,0,0.25)";
+                        ctx.fill();
+                        ctx.font = '48px Climate Crisis';
+                        ctx.fillStyle = "Black";
+                        ctx.fillText("KONIEC GRY!", 110, 100);
+                        ctx.font = '42px Climate Crisis';
+                        ctx.fillText("Twój wynik: " + snake.score, 140, 150);
+                        ctx.fillText("Wciśnij spacje aby", 60, 230);
+                        ctx.fillText("odnowic gre", 150, 280);
+                    }
+                };
+            }
+            setInterval(animate,100);
+            window.addEventListener("keydown", function (event) {
+            let code = event.code;
+            if (code == "KeyA" || code == "ArrowLeft" )
+                snake.turn('L')
+            else if (code == "KeyD" || code == 	"ArrowRight")
+                snake.turn('R')
+            else if (code == "KeyW" || code == 	"ArrowUp")
+                snake.turn('U')
+            else if (code == "KeyS" || code == 	"ArrowDown")
+                snake.turn('D')
+            else if (code == "Space")
+                snake.turn("restart")
+             });
+        </script>
+    </head>
+    <body>
+        <div id="gra">
+            <canvas id="board" width="672" height="672"></canvas>
+        </div>
+        
+    </body>
+</html>
